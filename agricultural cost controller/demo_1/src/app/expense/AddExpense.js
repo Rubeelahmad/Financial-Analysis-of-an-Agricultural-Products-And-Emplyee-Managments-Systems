@@ -7,16 +7,26 @@ import bsCustomFileInput from 'bs-custom-file-input';
 
 import "@coreui/coreui";
 
-import {CDataTable,
-//CBadge,
-//CButton,
-//CCollapse,
-CCardHeader,
-CCard,
-CCardBody
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import { format } from "date-fns";
+import { Bar } from 'react-chartjs-2';
+
+
+
+import {
+  CDataTable,
+  //CBadge,
+  //CButton,
+  //CCollapse,
+  CCardHeader,
+  CCard,
+  CCardBody
 } from '@coreui/react';
 
 export class Expense extends Component {
+
+
 
   constructor(props) {
     console.log("Constructor")
@@ -26,6 +36,7 @@ export class Expense extends Component {
     this.handleUpload = this.handleUpload.bind(this);
     this.updatedTotalExpenseAndIncome = this.updatedTotalExpenseAndIncome.bind(this);
     this.resetForm.bind(this);
+    this.generatePDF = this.generatePDF.bind(this);
 
     //this.signup = this.signup.bind(this);
 
@@ -43,11 +54,67 @@ export class Expense extends Component {
       expensedata: [],
       showErrorText: ""
 
+
     }
   }
 
+
+  data = {
+    labels: "",
+
+    datasets: [{
+      label: 'Expense Amount',
+      data: "",
+      backgroundColor: [
+        'rgba(255, 99, 132, 0.2)',
+        'rgba(54, 162, 235, 0.2)',
+        'rgba(255, 206, 86, 0.2)',
+        'rgba(75, 192, 192, 0.2)',
+        'rgba(153, 102, 255, 0.2)',
+        'rgba(255, 159, 64, 0.2)'
+      ],
+      borderColor: [
+        'rgba(255,99,132,1)',
+        'rgba(54, 162, 235, 1)',
+        'rgba(255, 206, 86, 1)',
+        'rgba(75, 192, 192, 1)',
+        'rgba(153, 102, 255, 1)',
+        'rgba(255, 159, 64, 1)'
+      ],
+      borderWidth: 1,
+      fill: false
+    }]
+  };
+
+  options = {
+    scales: {
+      yAxes: [{
+        ticks: {
+          beginAtZero: true
+        },
+        gridLines: {
+          color: "rgba(204, 204, 204,0.1)"
+        }
+      }],
+      xAxes: [{
+        gridLines: {
+          color: "rgba(204, 204, 204,0.1)"
+        }
+      }]
+    },
+    legend: {
+      display: false
+    },
+    elements: {
+      point: {
+        radius: 0
+      }
+    }
+  }
+
+
   //Update Total Expense & Income
-  updatedTotalExpenseAndIncome(stateexpenseAmount){
+  updatedTotalExpenseAndIncome(stateexpenseAmount) {
     const userid = localStorage.getItem('userid');
     var updatedtotalincome = 0
     var updatedtotalexpense = 0
@@ -56,23 +123,23 @@ export class Expense extends Component {
       console.log(snapshot.data().totalExpense)
       console.log(stateexpenseAmount)
 
-       updatedtotalexpense = parseInt(snapshot.data().totalExpense) + parseInt(stateexpenseAmount)
-       updatedtotalincome =  parseInt(snapshot.data().totalIncome) 
-       console.log(updatedtotalexpense)
-       console.log(updatedtotalincome)
+      updatedtotalexpense = parseInt(snapshot.data().totalExpense) + parseInt(stateexpenseAmount)
+      updatedtotalincome = parseInt(snapshot.data().totalIncome)
+      console.log(updatedtotalexpense)
+      console.log(updatedtotalincome)
 
-    }).then(()=>{
+    }).then(() => {
       console.log(updatedtotalexpense)
       console.log(updatedtotalincome)
       fire.firestore().collection('users').doc(userid).set({
         totalExpense: parseInt(updatedtotalexpense),
         totalIncome: parseInt(updatedtotalincome)
       })
-    
-    }).catch((err)=>{
+
+    }).catch((err) => {
       console.log(err)
     })
-  
+
   }
 
   //yearly expense
@@ -80,9 +147,8 @@ export class Expense extends Component {
     console.log("In Add Yearly Expense Function:::::")
     const userid = localStorage.getItem('userid');
     var stateexpenseAmount = this.state.expenseAmount
-    if(stateexpenseAmount === "" )
-    {
-            stateexpenseAmount = 0
+    if (stateexpenseAmount === "") {
+      stateexpenseAmount = 0
     }
     //get selected year
     var selectedYear = new Date(this.state.date).getFullYear()
@@ -92,11 +158,11 @@ export class Expense extends Component {
 
     // Add YerlyExpense  Fields and updated Expensse accordingly
     fire.firestore().collection('users').doc(userid).collection('years').doc(selectedYear.toString()).get().then((snapshot) => {
-     // console.log(snapshot.exists)
-     // console.log(snapshot.data().yearlyExpense)
- 
+      // console.log(snapshot.exists)
+      // console.log(snapshot.data().yearlyExpense)
+
       //snapshot.data().yearlyExpense !== undefined ||
-      if ( snapshot.exists === true) {
+      if (snapshot.exists === true) {
 
         console.log("IFFFFFFFFFFFFFFFFFFF")
         var yearlyExpense = snapshot.data().yearlyExpense;
@@ -112,10 +178,10 @@ export class Expense extends Component {
           console.log(yearlyIncome)
 
         }
-        
+
         console.log(stateexpenseAmount)
         //console.log(this.state.incomeAmount)
-        
+
 
         if (stateexpenseAmount > 0) {
           var updatedExpenseAmount = parseInt(yearlyExpense) + parseInt(stateexpenseAmount)
@@ -124,8 +190,8 @@ export class Expense extends Component {
             yearlyIncome: parseInt(yearlyIncome)
           }).then(() => {
             console.log("Sum of Toatl yearlyExpense updated as: " + updatedExpenseAmount)
-             //Updated Total Expensse and Total Income
-             this.updatedTotalExpenseAndIncome(stateexpenseAmount)
+            //Updated Total Expensse and Total Income
+            this.updatedTotalExpenseAndIncome(stateexpenseAmount)
           })
         }
       }
@@ -139,7 +205,7 @@ export class Expense extends Component {
           console.log("Toatl yearlyExpense is updated")
           //Updated Total Expensse and Total Income
           this.updatedTotalExpenseAndIncome(stateexpenseAmount)
-      
+
 
         })
       }
@@ -187,8 +253,8 @@ export class Expense extends Component {
           this.setState({
             showErrorText: success
           })
-         // Swal.fire("Expense added Successfully..!")
-       //   window.location.reload(true)
+          // Swal.fire("Expense added Successfully..!")
+          //   window.location.reload(true)
 
         }
 
@@ -197,7 +263,7 @@ export class Expense extends Component {
       })
     }
     else {
-     // Swal.fire("Some field(s) are missing...!!!")
+      // Swal.fire("Some field(s) are missing...!!!")
       var err = "Error: Some field(s) are missing...!!!";
       this.setState({
         showErrorText: err
@@ -216,61 +282,73 @@ export class Expense extends Component {
 
   componentDidMount() {
     console.log("component did mount")
-
     bsCustomFileInput.init();
     const userid = localStorage.getItem('userid');
-    
 
-        //Get current user's totalIncome & totalIncome
-        fire.firestore().collection('users').doc(userid).get().then((snapshot) => {
-          console.log(snapshot.data())
-        })
-    
-        
-         // In running State Query: Get current user , Yearswise , yearlyIncome & Yearly Incomes 
-         // And Fetching Year wise Expenses Data
-         fire.firestore().collection('users').doc(userid).collection('years').get().then((snapshot)=>{
-           console.log(snapshot)
-           const expensedata_arr = [];
-           snapshot.docs.forEach(doc => {
-             //Year
-             var year = doc.id
-             console.log(year)
-             //Yearly Income and Yearly Expense
-             console.log(doc.data())
+    //Get current user's totalIncome & totalIncome
+    fire.firestore().collection('users').doc(userid).get().then((snapshot) => {
+      // console.log(snapshot.data())
+    })
 
-             if(year)
-             {
-              //Fetch Year wise Expense Data
-         fire.firestore().collection('users').doc(userid).collection('years').doc(year).collection('expenses').get().then((snapshot) => {
-          // console.log(snapshot.data())
-         
-          snapshot.docs.forEach(doc => {
-            //   console.log(doc.id)
-            //   console.log(doc.data())
-    
-            var expensedata = doc.data();
-            expensedata.id = doc.id;
-            expensedata.year = year
-            expensedata_arr.push(expensedata);
-          });
-          console.log("Expense Data Array :::::::::::: ", expensedata_arr)
-    
-          this.setState({
-    
-            expensedata: expensedata_arr
+    // In running State Query: Get current user , Yearswise , yearlyIncome & Yearly Incomes 
+    // And Fetching Year wise Expenses Data
+    fire.firestore().collection('users').doc(userid).collection('years').get().then((snapshot) => {
+      const expensedata_arr = [];
+      var graphyear = [];
+      var graphamount = [];
+      var year_arr = []
+      snapshot.docs.map(doc => {
+        year_arr.push(doc.id)
+        year_arr = year_arr.sort((a, b) => b - a)
+
+      })
+      // console.log(year_arr)
+      year_arr.forEach(year => {
+        if (year) {
+          //Fetch Year wise Expense Data
+          var totalAmount = 0;
+          fire.firestore().collection('users').doc(userid).collection('years').doc(year).collection('expenses').orderBy("date", "desc").get().then((snapshot) => {
+
+            snapshot.docs.forEach(doc => {
+              var expensedata = doc.data();
+              // console.log(expensedata)
+              expensedata.id = doc.id;
+              expensedata.year = year;
+              expensedata_arr.push(expensedata);
+              //handle amount for graph
+              if (isNaN(expensedata.expenseAmount) || (expensedata.expenseAmount === undefined)) {
+                expensedata.expenseAmount = 0;
+              }
+              totalAmount = parseInt(expensedata.expenseAmount) + parseInt(totalAmount);
+            //  console.log("In foreach Total Amount: ", totalAmount)
+
+            });
+
+            console.log("totalAmount", totalAmount)
+            graphamount.push(totalAmount)
+            //handle year for graph
+            if (!(graphyear.includes(year))) {
+              graphyear.push(year)
+            }
+
+            console.log("this.data.labels", graphyear)
+            this.data.labels = graphyear
+            console.log("this.data.datasets[0].data", graphamount)
+            this.data.datasets[0].data = graphamount
+         //   console.log("this.data.datasets[0].data ", this.data.datasets[0].data)
+            
+            this.setState({
+              expensedata: expensedata_arr
+            })
+
+
           })
-    
-        })
-      
-             }
+        }
+      });
+    })
 
 
-           });
-         }) 
-
-
-   //In Running State Query: Get userwise , All categoryName & CatDescription from categoriesAll collections 
+    //In Running State Query: Get userwise , All categoryName & CatDescription from categoriesAll collections 
     fire.firestore().collection('users').doc(userid).collection('CategoriesAll').get().then((snapshot) => {
       // console.log(snapshot.data())
       const categoryname = [];
@@ -345,8 +423,8 @@ export class Expense extends Component {
       // For instance, get the download URL: https://firestorage.googleapis.com/...
       uploadTask.snapshot.ref.getDownloadURL().then(function (url) {
         console.log('File available at', url);
-       // Swal.fire("Expense added Successfully..!")
-      //  window.location.reload(true)
+        // Swal.fire("Expense added Successfully..!")
+        //  window.location.reload(true)
 
         /*       if (url) {
                
@@ -375,20 +453,66 @@ export class Expense extends Component {
     });
   };
 
+
+  generatePDF = tickets => {
+    // initialize jsPDF
+    console.log(tickets)
+    const doc = new jsPDF();
+
+    // define the columns we want and their titles
+    const tableColumn = ["categoryName", "cropName", "date", "Amount", "Description"];
+    // define an empty array of rows
+
+
+    const tableRows = [];
+
+    // for each ticket pass all its data into an array
+    tickets.forEach(ticket => {
+      const ticketData = [
+        ticket.categoryName,
+        ticket.cropName,
+        format(new Date(ticket.date), "dd-MM-yyyy"),
+        ticket.expenseAmount,
+        ticket.expenseDescription,
+
+        // called date-fns to format the date on the ticket
+        // format(new Date(ticket.updated_at), "dd-MM-yyyy")
+      ];
+      // push each tickcet's info into a row
+      tableRows.push(ticketData);
+    });
+
+
+    // startY is basically margin-top
+    doc.autoTable(tableColumn, tableRows, { startY: 40 });
+    const date = new Date();
+    console.log("Date: ", date)
+    // we use a date string to generate our filename.
+    // ticket title. and margin-top + margin-left
+    doc.text("Available Expense's Data Report", 60, 30);
+    // we define the name of our PDF file.
+    doc.save(`Expense_Report_${date.getTime()}.pdf`);
+  };
+
+
   render() {
 
     const fields = [
-     /*  { key: 'id', _style:{color:'white'} }, */
-      { key: 'categoryName', _style:{color:'white'} },
-      { key: 'cropName', _style:{color:'white'} },
-      { key: 'date', _style:{color:'white'} },
-      { key: 'year', _style:{color:'white'} },
-      { key: 'expenseAmount', _style:{color:'white'} },
-      { key: 'expenseDescription', _style:{color:'white'} }
+      { key: 'categoryName', _style: { color: 'white' } },
+      { key: 'cropName', _style: { color: 'white' } },
+      { key: 'date', _style: { color: 'white' } },
+      { key: 'year', _style: { color: 'white' } },
+      { key: 'expenseAmount', _style: { color: 'white' } },
+      { key: 'expenseDescription', _style: { color: 'white' } }
     ];
 
+
+
+
     return (
+
       <div>
+
         <div className="d-flex align-items-center auth px-0">
           <div className="row w-100 mx-0">
             <div className="col-12 grid-margin stretch-card">
@@ -403,13 +527,13 @@ export class Expense extends Component {
                         className="form-control"
                         id="categoryname"
                         name="categoryName"
-                        style={{color:'white'}}
+                        style={{ color: 'white' }}
                         value={this.state.categoryName}
                         onChange={this.handleChange}>
-                        <option style={{color:'white'}}>-- Select --</option>
+                        <option style={{ color: 'white' }}>-- Select --</option>
                         {
-                          this.state.getCategoryName.map((option) => (
-                            <option style={{color:'black'}} value={option}>
+                          this.state.getCategoryName.map((option , idx) => (
+                            <option style={{ color: 'black' }} value={option} key={idx}>
                               {option}
                             </option>
                             // console.log(option)
@@ -422,13 +546,13 @@ export class Expense extends Component {
                       <select className="form-control"
                         id="cropname"
                         name="cropName"
-                        style={{color:'white'}}
+                        style={{ color: 'white' }}
                         value={this.state.cropName}
                         onChange={this.handleChange}>
-                        <option style={{color:'white'}} >-- Select --</option>
+                        <option style={{ color: 'white' }} >-- Select --</option>
                         {
-                          this.state.getCropName.map((option) => (
-                            <option  style={{color:'black'}} value={option}>
+                          this.state.getCropName.map((option , idx) => (
+                            <option style={{ color: 'black' }} value={option} key= {idx}>
                               {option}
                             </option>
                             // console.log(option)
@@ -441,7 +565,7 @@ export class Expense extends Component {
                       <label htmlFor="date">Select Date</label>
                       <Form.Control
                         type="date"
-                        style={{color:'white'}}
+                        style={{ color: 'white' }}
                         id="date"
                         name="date"
                         value={this.state.date}
@@ -452,7 +576,7 @@ export class Expense extends Component {
                     <Form.Group>
                       <label htmlFor="expenseamount">Enter Amount You have Spent</label>
                       <Form.Control type="text"
-                      style={{color:'white'}}
+                        style={{ color: 'white' }}
                         className="form-control"
                         id="expenseamount"
                         name="expenseAmount"
@@ -483,7 +607,7 @@ export class Expense extends Component {
                       <label htmlFor="expensedescription">Describe the Expenses</label>
                       <textarea
                         className="form-control"
-                        style={{color:'white'}}
+                        style={{ color: 'white' }}
                         id="expensedescription"
                         name="expenseDescription"
                         value={this.state.expenseDescription}
@@ -494,7 +618,7 @@ export class Expense extends Component {
                     </Form.Group>
                     <button type="submit" className="btn btn-primary mr-2" onClick={this.addExpenses} >Add Expense</button>
                     <button type="submit" className="btn btn-dark mr-2" onClick={this.resetForm}>Cancel</button>
-                    {' '}<label type="text" style={{color: 'red'}}>{this.state.showErrorText}</label>
+                    {' '}<label type="text" style={{ color: 'red' }}>{this.state.showErrorText}</label>
                   </form>
                 </div>
               </div>
@@ -503,8 +627,23 @@ export class Expense extends Component {
           </div>
         </div>
 
-          
-        <div className="row">
+
+        <div className="d-flex justify-content-center auth px-0">
+          <div className="row w-50 mx-0">
+            <div className="col-12 grid-margin stretch-card">
+              <div className="card">
+                <div className="card-body">
+                  <h4 className="card-title">Expenses Graph</h4>
+                  <Bar data={this.data} options={this.options} redraw />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        {/*        <div className="row" id="pdfdiv" Component={Paper} > */}
+        <div className="row" >
 
           <div className="col-lg-12 grid-margin stretch-card">
             <div className="card">
@@ -514,30 +653,39 @@ export class Expense extends Component {
                 </p>
                 <div className="table-responsive">
 
-                <CCard  >
-              <CCardHeader>Available Year wise Expense Data</CCardHeader>
-              <CCardBody>
-                  <CDataTable
+                  <CCard  >
 
-                    items={this.state.expensedata}
-                    fields={fields}
-                    itemsPerPageSelect
-                    itemsPerPage={5}
-                    pagination = {true}
-                    tableFilter={true}
-                    sorter ={true}
-                    _style
-                    border ={true}
-                    responsive = {true}
-                    outlined={true}
-                    footer = {true}
+                    <CCardHeader>Available Year wise Expense Data</CCardHeader>
+                    <CCardBody>
+                      <CDataTable
 
-                  />
-           
-              </CCardBody>
-              </CCard  >
+                        items={this.state.expensedata}
+                        fields={fields}
+                        itemsPerPageSelect
+                        itemsPerPage={5}
+                        pagination={true}
+                        tableFilter={true}
+                        sorter={true}
+                        _style
+                        border={true}
+                        responsive={true}
+                        outlined={true}
+                        footer={true}
+
+                      />
+
+                    </CCardBody>
+
+                    <div className="col-md-12 d-flex justify-content-center ">
+                      <button className="btn btn-primary " onClick={() => this.generatePDF(this.state.expensedata)}>generate pdf
+                      </button>
+                    </div>
+                  </CCard  >
+
+
                 </div>
               </div>
+
             </div>
           </div>
         </div>
@@ -548,7 +696,6 @@ export class Expense extends Component {
     )
   }
 }
-
 
 
 export default Expense

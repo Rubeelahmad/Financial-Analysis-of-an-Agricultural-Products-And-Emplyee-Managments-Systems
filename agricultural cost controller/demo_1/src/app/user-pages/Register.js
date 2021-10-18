@@ -118,10 +118,7 @@ export class Register extends Component {
                     </div>
                   </div>
                   <div className="mt-3">
-                  {/*<Link className="btn btn-block btn-primary btn-lg font-weight-medium auth-form-btn" to="/dashboard">SIGN UP</Link>*/}
-
                   <button className="btn btn-block btn-primary btn-lg font-weight-medium auth-form-btn" onClick={this.signup}>Signup</button>
-
 
                   </div>
                   <div className="text-center mt-4 font-weight-light">

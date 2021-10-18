@@ -7,6 +7,12 @@ import fire from '../../config/fire';
 
 import "@coreui/coreui";
 
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import { format } from "date-fns";
+import { Bar } from 'react-chartjs-2';
+
+
 import {
   CDataTable,
   //CBadge,
@@ -27,7 +33,7 @@ export class Income extends Component {
     this.handleUpload = this.handleUpload.bind(this);
     this.updatedTotalExpenseAndIncome = this.updatedTotalExpenseAndIncome.bind(this);
     this.resetForm.bind(this);
-
+    this.generatePDF = this.generatePDF.bind(this);
     //this.signup = this.signup.bind(this);
 
     this.state = {
@@ -44,6 +50,61 @@ export class Income extends Component {
       incomedata: []
     }
   }
+
+  
+  data = {
+    labels: "",
+
+    datasets: [{
+      label: 'Income Amount',
+      data: "",
+      backgroundColor: [
+        'rgba(255, 99, 132, 0.2)',
+        'rgba(54, 162, 235, 0.2)',
+        'rgba(255, 206, 86, 0.2)',
+        'rgba(75, 192, 192, 0.2)',
+        'rgba(153, 102, 255, 0.2)',
+        'rgba(255, 159, 64, 0.2)'
+      ],
+      borderColor: [
+        'rgba(255,99,132,1)',
+        'rgba(54, 162, 235, 1)',
+        'rgba(255, 206, 86, 1)',
+        'rgba(75, 192, 192, 1)',
+        'rgba(153, 102, 255, 1)',
+        'rgba(255, 159, 64, 1)'
+      ],
+      borderWidth: 1,
+      fill: false
+    }]
+  };
+
+  options = {
+    scales: {
+      yAxes: [{
+        ticks: {
+          beginAtZero: true
+        },
+        gridLines: {
+          color: "rgba(204, 204, 204,0.1)"
+        }
+      }],
+      xAxes: [{
+        gridLines: {
+          color: "rgba(204, 204, 204,0.1)"
+        }
+      }]
+    },
+    legend: {
+      display: false
+    },
+    elements: {
+      point: {
+        radius: 0
+      }
+    }
+  }
+
 
   //Update Total Expense & Income
   updatedTotalExpenseAndIncome(stateincomeAmount) {
@@ -203,7 +264,7 @@ export class Income extends Component {
 
 
   handleChange(e) {
-    console.log("Hellol:::::::::::::::: ", e.target.value)
+ /*    console.log("Hellol:::::::::::::::: ", e.target.value) */
     this.setState({
       [e.target.name]: e.target.value
     })
@@ -212,9 +273,6 @@ export class Income extends Component {
 
 
   componentDidMount() {
-    console.log("component did mount")
-
-
 
     bsCustomFileInput.init();
     const userid = localStorage.getItem('userid');
@@ -238,17 +296,20 @@ export class Income extends Component {
     fire.firestore().collection('users').doc(userid).collection('years').get().then((snapshot) => {
       // console.log(snapshot.data())
       const incomedata_arr = [];
+      var graphyear = [];
+      var graphamount = [];
+      var year_arr = []
+      snapshot.docs.map(doc => {
+        year_arr.push(doc.id)
+        year_arr = year_arr.sort((a, b) => b - a)
 
-      snapshot.docs.forEach(doc => {
-        //Year
-        var year = doc.id
-        console.log(year)
-        //Yearly Income and Yearly Expense
-        console.log(doc.data())
-     
+      })
+      // console.log(year_arr)
+      year_arr.forEach(year => {
         if (year) {
           //Fetch Year wise Income Data
-          fire.firestore().collection('users').doc(userid).collection('years').doc(year).collection('incomes').get().then((snapshot) => {
+          var totalAmount = 0;
+          fire.firestore().collection('users').doc(userid).collection('years').doc(year).collection('incomes').orderBy("date", "desc").get().then((snapshot) => {
            // console.log(snapshot.data())
          
             snapshot.docs.forEach(doc => {
@@ -258,11 +319,27 @@ export class Income extends Component {
               incomedata.id = doc.id;
               incomedata.year = year
               incomedata_arr.push(incomedata);
+              if (isNaN(incomedata.incomeAmount) || (incomedata.incomeAmount === undefined)) {
+                incomedata.incomeAmount = 0;
+              }
+              totalAmount = parseInt(incomedata.incomeAmount) + parseInt(totalAmount);
+              console.log("In foreach Total Amount: ", totalAmount)
             });
-            console.log("In Else Incomes Data Array:::::::::::: ", incomedata_arr)
+           // console.log("In Else Incomes Data Array:::::::::::: ", incomedata_arr)
+           console.log("totalAmount", totalAmount)
+           graphamount.push(totalAmount)
+           //handle year for graph
+           if (!(graphyear.includes(year))) {
+             graphyear.push(year)
+           }
+
+           console.log("this.data.labels", graphyear)
+           this.data.labels = graphyear
+           console.log("this.data.datasets[0].data", graphamount)
+           this.data.datasets[0].data = graphamount
+           console.log("this.data.datasets[0].data ", this.data.datasets[0].data)
 
             this.setState({
-      
               incomedata: incomedata_arr
             })
           })
@@ -384,6 +461,51 @@ export class Income extends Component {
     });
   };
 
+
+
+  
+
+  generatePDF = tickets => {
+    // initialize jsPDF
+    console.log(tickets)
+    const doc = new jsPDF();
+
+    // define the columns we want and their titles
+    const tableColumn = ["categoryName", "cropName", "date", "Amount", "Description"];
+    // define an empty array of rows
+
+
+    const tableRows = [];
+
+    // for each ticket pass all its data into an array
+    tickets.forEach(ticket => {
+      const ticketData = [
+        ticket.categoryName,
+        ticket.cropName,
+        format(new Date(ticket.date), "dd-MM-yyyy"),
+        ticket.incomeAmount,
+        ticket.incomeDescription,
+
+        // called date-fns to format the date on the ticket
+        // format(new Date(ticket.updated_at), "dd-MM-yyyy")
+      ];
+      // push each tickcet's info into a row
+      tableRows.push(ticketData);
+    });
+
+
+    // startY is basically margin-top
+    doc.autoTable(tableColumn, tableRows, { startY: 40 });
+    const date = new Date();
+    console.log("Date: ", date)
+    // we use a date string to generate our filename.
+    // ticket title. and margin-top + margin-left
+    doc.text("Available Incomes Data Report", 60, 30);
+    // we define the name of our PDF file.
+    doc.save(`Incomes_Report_${date.getTime()}.pdf`);
+  };
+
+
   render() {
 
     const fields = [
@@ -421,8 +543,8 @@ export class Income extends Component {
                         onChange={this.handleChange}>
                         <option  style={{color:'white'}} >-- Select --</option>
                         {
-                          this.state.getCategoryName.map((option) => (
-                            <option   style={{color:'black'}} value={option}>
+                          this.state.getCategoryName.map((option , idx) => (
+                            <option   style={{color:'black'}} value={option} key={idx}>
                               {option}
                             </option>
                             // console.log(option)
@@ -440,8 +562,8 @@ export class Income extends Component {
                         onChange={this.handleChange}>
                         <option  style={{color:'white'}}>-- Select --</option>
                         {
-                          this.state.getCropName.map((option) => (
-                            <option  style={{color:'black'}} value={option}>
+                          this.state.getCropName.map((option , idx) => (
+                            <option  style={{color:'black'}} value={option} key= {idx}>
                               {option}
                             </option>
                             // console.log(option)
@@ -514,7 +636,18 @@ export class Income extends Component {
           </div>
         </div>
 
-
+        <div className="d-flex justify-content-center auth px-0">
+          <div className="row w-50 mx-0">
+            <div className="col-12 grid-margin stretch-card">
+              <div className="card">
+                <div className="card-body">
+                  <h4 className="card-title">Incomes Graph</h4>
+                  <Bar data={this.data} options={this.options} redraw />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div className="row">
 
@@ -547,8 +680,12 @@ export class Income extends Component {
 
                   />
                   </CCardBody>
+                  <div className="col-md-12 d-flex justify-content-center ">
+                  <button
+                    className="btn btn-primary" onClick={() => this.generatePDF(this.state.incomedata)}>generate pdf
+                  </button>
+                      </div>
                   </CCard>
-          
 
                 </div>
               </div>

@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Form } from 'react-bootstrap';
 import fire from '../../config/fire';
-//import Swal from 'sweetalert2';
+
 import 'bootstrap';
 import "@coreui/coreui";
 
@@ -13,7 +13,9 @@ import {CDataTable,
   CCard,
   CCardBody
   } from '@coreui/react';
-
+  
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 
 export class Crop extends Component {
@@ -25,6 +27,7 @@ export class Crop extends Component {
     this.handleChange = this.handleChange.bind(this);
     this.resetForm = this.resetForm.bind(this);
     //this.signup = this.signup.bind(this);
+    this.generatePDF = this.generatePDF.bind(this);
 
     this.state = {
       cropName: "",
@@ -168,6 +171,46 @@ export class Crop extends Component {
   };
 
 
+
+
+  generatePDF = tickets => {
+    // initialize jsPDF
+    console.log(tickets)
+    const doc = new jsPDF();
+
+    // define the columns we want and their titles
+    const tableColumn = ["cropname", "description"];
+    // define an empty array of rows
+
+
+    const tableRows = [];
+
+    // for each ticket pass all its data into an array
+    tickets.forEach(ticket => {
+      const ticketData = [
+        ticket.cropName,
+        ticket.cropDescription,
+
+        // called date-fns to format the date on the ticket
+        // format(new Date(ticket.updated_at), "dd-MM-yyyy")
+      ];
+      // push each tickcet's info into a row
+      tableRows.push(ticketData);
+    });
+
+
+    // startY is basically margin-top
+    doc.autoTable(tableColumn, tableRows, { startY: 40 });
+    const date = new Date();
+    console.log("Date: ", date)
+    // we use a date string to generate our filename.
+    // ticket title. and margin-top + margin-left
+    doc.text("Add Crop's Data Report", 60, 30);
+    // we define the name of our PDF file.
+    doc.save(`Add_Crops_${date.getTime()}.pdf`);
+  };
+
+
   render() {
 
     const fields = [
@@ -252,11 +295,10 @@ export class Crop extends Component {
                     responsive = {true}
                     outlined={true}
                     footer = {true}
-                   
-
                   />
                     
               </CCardBody>
+
               </CCard  >
             
                 </div>

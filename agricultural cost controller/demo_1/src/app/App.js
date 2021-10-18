@@ -70,6 +70,7 @@ authListner(){
   }
 
   componentDidUpdate(prevProps) {
+    console.log("In component did mount: " ,this.props.location.pathname);
     if (this.props.location !== prevProps.location) {
       this.onRouteChanged();
     }

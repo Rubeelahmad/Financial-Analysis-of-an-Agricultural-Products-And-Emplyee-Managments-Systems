@@ -4,7 +4,6 @@ import fire from '../../config/fire';
 import Modal from 'react-bootstrap/Modal'
 import 'bootstrap';
 import '@coreui/coreui';
-/* import { query, where , orderBy} from "../../config/fire";   */
 
 
 
@@ -18,6 +17,9 @@ import {
   CCardBody
 } from '@coreui/react';
 import DatePicker from 'react-datetime-picker';
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import { format } from "date-fns";
 
 
 
@@ -144,16 +146,20 @@ export class Dashboard extends Component {
       // console.log(snapshot.data())
       const incomedata_arr = [];
 
-      snapshot.docs.forEach(doc => {
-        //Year
-        var year = doc.id
-        console.log(year)
-        //Yearly Income and Yearly Expense
-        console.log(doc.data())
+      var year_arr = []
+      snapshot.docs.map(doc => {
+        year_arr.push(doc.id)
+        year_arr = year_arr.sort((a, b) => b - a)
+
+      })
+      console.log(year_arr)
+   
+      year_arr.forEach(year => {
+      //console.log(year)
 
         if (year) {
           //Fetch Year wise Income Data
-          fire.firestore().collection('users').doc(userid).collection('years').doc(year).collection('incomes').get().then((snapshot) => {
+          fire.firestore().collection('users').doc(userid).collection('years').doc(year).collection('incomes').orderBy("date", "desc").get().then((snapshot) => {
             // console.log(snapshot.data())
 
             snapshot.docs.forEach(doc => {
@@ -187,16 +193,20 @@ export class Dashboard extends Component {
     fire.firestore().collection('users').doc(userid).collection('years').get().then((snapshot) => {
       console.log(snapshot)
       const expensedata_arr = [];
-      snapshot.docs.forEach(doc => {
-        //Year
-        var year = doc.id
-        console.log(year)
-        //Yearly Income and Yearly Expense
-        console.log(doc.data())
+      var year_arr = []
+      snapshot.docs.map(doc => {
+        year_arr.push(doc.id)
+        year_arr = year_arr.sort((a, b) => b - a)
+
+      })
+      console.log(year_arr)
+   
+      year_arr.forEach(year => {
+        //console.log(year)
 
         if (year) {
           //Fetch Year wise Expense Data
-          fire.firestore().collection('users').doc(userid).collection('years').doc(year).collection('expenses').get().then((snapshot) => {
+          fire.firestore().collection('users').doc(userid).collection('years').doc(year).collection('expenses').orderBy("date", "desc").get().then((snapshot) => {
             // console.log(snapshot.data())
 
             snapshot.docs.forEach(doc => {
@@ -283,10 +293,6 @@ export class Dashboard extends Component {
     window.location.reload(true)
     console.log("handle request ");
   }
-
-
-
-
 
   handleChange(e) {
     console.log("Hellol:::::::::::::::: ", e.target.value)
@@ -551,23 +557,23 @@ export class Dashboard extends Component {
     var endYear = new Date(this.state.enddate).getFullYear()
 
     var expensedata_arr = []
-    console.log("startYear", startYear)
+/*     console.log("startYear", startYear)
     console.log("endYear", endYear)
     console.log(crop)
     console.log(category)
     console.log(start)
-    console.log(end)
+    console.log(end) */
 
     if (startYear === endYear) {
       expensedata_arr = []
       var timeRefStartEnd = fire.firestore().collection('users').doc(userid).collection('years').doc(startYear.toString()).collection('expenses');
       timeRefStartEnd.where("date", ">=", new Date(start)).get().then(snapshot => {
         //pass your 'data' here
-        console.log(snapshot.docs)
+      /*   console.log(snapshot.docs) */
 
         snapshot.docs.forEach(doc => {
-          console.log(doc.id)
-          console.log(doc.data())
+    /*       console.log(doc.id)
+          console.log(doc.data()) */
           var expensedata = doc.data();
           if (crop === "-- All --") {
             crop = ""
@@ -742,6 +748,114 @@ export class Dashboard extends Component {
 
   }
 
+
+
+
+//Function to generate pdf reports for expenses
+  generateExpensesPDF = tickets => {
+    // initialize jsPDF
+    console.log(tickets)
+    const doc = new jsPDF();
+
+    // define the columns we want and their titles
+    const tableColumn = ["categoryName", "cropName", "date", "Amount", "Description"];
+    // define an empty array of rows
+
+
+    const tableRows = [];
+
+    // for each ticket pass all its data into an array
+    tickets.forEach(ticket => {
+      const ticketData = [
+        ticket.categoryName,
+        ticket.cropName,
+        format(new Date(ticket.date), "dd-MM-yyyy"),
+        ticket.expenseAmount,
+        ticket.expenseDescription,
+
+      ];
+      // push each tickcet's info into a row
+      tableRows.push(ticketData);
+    });
+
+
+    // startY is basically margin-top
+    doc.autoTable(tableColumn, tableRows, { startY: 40 });
+    const date = new Date();
+    console.log("Date: ", date)
+    // we use a date string to generate our filename.
+    // ticket title. and margin-left + margin-top
+    doc.text("Available Expense's Data Report", 60, 30);
+    if( format(this.state.startdate , "dd-MM-yyyy") === format(date , "dd-MM-yyyy")
+    && format(this.state.enddate , "dd-MM-yyyy") === format(date , "dd-MM-yyyy"))
+    {
+      doc.text("From: -- "  , 10, 5);
+      doc.text("To: -- " , 10, 15);
+    }
+    else
+    {
+      doc.text("From:" +  format(this.state.startdate , "dd-MM-yyyy") , 10, 5);
+      doc.text("To: " + format(this.state.enddate , "dd-MM-yyyy")  , 10, 15);
+    }
+
+
+    // we define the name of our PDF file.
+    doc.save(`Expense_Report_${date.getTime()}.pdf`);
+  };
+
+  //function to genrate pdf reports for Incomes
+  generateIncomesPDF = tickets => {
+    // initialize jsPDF
+    console.log(tickets)
+    const doc = new jsPDF();
+
+    // define the columns we want and their titles
+    const tableColumn = ["categoryName", "cropName", "date", "Amount", "Description"];
+    // define an empty array of rows
+
+
+    const tableRows = [];
+
+    // for each ticket pass all its data into an array
+    tickets.forEach(ticket => {
+      const ticketData = [
+        ticket.categoryName,
+        ticket.cropName,
+        format(new Date(ticket.date), "dd-MM-yyyy"),
+        ticket.incomeAmount,
+        ticket.incomeDescription,
+
+      ];
+      // push each tickcet's info into a row
+      tableRows.push(ticketData);
+    });
+
+
+    // startY is basically margin-top
+    doc.autoTable(tableColumn, tableRows, { startY: 40 });
+    const date = new Date();
+    console.log("Date: ", date)
+    // we use a date string to generate our filename.
+    // ticket title. and margin-left + margin-top
+    doc.text("Available Income's Data Report", 60, 30);
+    if( format(this.state.startdate , "dd-MM-yyyy") === format(date , "dd-MM-yyyy")
+    && format(this.state.enddate , "dd-MM-yyyy") === format(date , "dd-MM-yyyy"))
+    {
+      doc.text("From: -- "  , 10, 5);
+      doc.text("To: -- " , 10, 15);
+    }
+    else
+    {
+      doc.text("From:" +  format(this.state.startdate , "dd-MM-yyyy") , 10, 5);
+      doc.text("To: " + format(this.state.enddate , "dd-MM-yyyy")  , 10, 15);
+    }
+
+
+    // we define the name of our PDF file.
+    doc.save(`Incomes_Report_${date.getTime()}.pdf`);
+  };
+
+
   render() {
     const incomefields = [
       /* { key: 'id',  _style:{color:'white'} }, */
@@ -887,7 +1001,7 @@ export class Dashboard extends Component {
                     <div className="row">
                       <div className="col-md-2"></div>
                       <div className="col-md-2">
-                        <label>Category Name123:</label>
+                        <label>Category Name:</label>
 
 
                         <select
@@ -899,8 +1013,8 @@ export class Dashboard extends Component {
                           onChange={this.handleChange}>
                           <option style={{ color: 'white' }} >-- All --</option>
                           {
-                            this.state.getCategoryName.map((option) => (
-                              <option style={{ color: 'black' }} value={option}>
+                            this.state.getCategoryName.map((option, idx) => (
+                              <option style={{ color: 'black' }} value={option} key={idx} >
                                 {option}
                               </option>
                               // console.log(option)
@@ -921,8 +1035,8 @@ export class Dashboard extends Component {
                           onChange={this.handleChange}>
                           <option style={{ color: 'white' }}>-- All --</option>
                           {
-                            this.state.getCropName.map((option) => (
-                              <option style={{ color: 'black' }} value={option}>
+                            this.state.getCropName.map((option , idx) => (
+                              <option style={{ color: 'black' }} value={option} key =  {idx}>
                                 {option}
                               </option>
                               // console.log(option)
@@ -933,7 +1047,7 @@ export class Dashboard extends Component {
                       </div>
                       <div className="col-md-2">
                         <label>From: </label>
-                        <div className="text-white bg-light ">
+                        <div className="text-dark bg-light m-0.5" style={{width: "100%"}}>
 
                           <DatePicker
 
@@ -948,7 +1062,7 @@ export class Dashboard extends Component {
                       </div>
                       <div className="col-md-2">
                         <label>To: </label>
-                        <div className="text-white bg-light ">
+                    <div className="text-dark bg-light m-0.5" style={{width: "100%"}}>
 
                           <DatePicker
                             data-enable-time
@@ -998,9 +1112,14 @@ export class Dashboard extends Component {
                             
                           />
                         </CCardBody>
+                        <div className="col-md-12 d-flex justify-content-center ">
+                        <button className="btn btn-primary" onClick={() => this.generateIncomesPDF(this.state.incomedata)}>generate pdf
+                      </button>
+                  </div>
                       </CCard>
 
 
+               
                     </div>
                   </div>
                 </div>
@@ -1020,7 +1139,7 @@ export class Dashboard extends Component {
           size="lg"
           aria-labelledby="contained-modal-title-vcenter"
           centered
-        >
+          >
           <Modal.Header closeButton>
             <Modal.Title id="example-custom-modal-styling-title">
               Total Expense:  ${this.state.gettotalExpense}
@@ -1028,17 +1147,13 @@ export class Dashboard extends Component {
           </Modal.Header>
           <Modal.Body>
             <div className="row">
-
               <div className="col-lg-12 grid-margin stretch-card">
                 <div className="card">
                   <div className="card-body">
-
-
                     <div className="row">
                       <div className="col-md-2"></div>
                       <div className="col-md-2">
                         <label>Category Name: </label>
-
                         <select
                           className="form-control"
                           style={{ color: 'white' }}
@@ -1048,15 +1163,14 @@ export class Dashboard extends Component {
                           onChange={this.handleChange}>
                           <option style={{ color: 'white' }} >-- All --</option>
                           {
-                            this.state.getCategoryName.map((option) => (
-                              <option style={{ color: 'black' }} value={option}>
+                            this.state.getCategoryName.map((option , idx) => (
+                              <option style={{ color: 'black' }} value={option} key={idx}>
                                 {option}
                               </option>
                               // console.log(option)
                             )
                             )}
                         </select>
-
                       </div>
                       <div className="col-md-2">
                         <label>Crop Name: </label>
@@ -1068,21 +1182,18 @@ export class Dashboard extends Component {
                           onChange={this.handleChange}>
                           <option style={{ color: 'white' }}>-- All --</option>
                           {
-                            this.state.getCropName.map((option) => (
-                              <option style={{ color: 'black' }} value={option}>
+                            this.state.getCropName.map((option , idx) => (
+                              <option style={{ color: 'black' }} value={option} key= {idx}>
                                 {option}
                               </option>
                               // console.log(option)
                             )
                             )}
                         </select>
-
-
                       </div>
                       <div className="col-md-2">
                         <label>From: </label>
-                        <div className="text-white bg-light ">
-
+                        <div className="text-dark bg-light m-0.5" style={{width: "100%"}}>
                           <DatePicker
                             data-enable-time
                             value={startdate}
@@ -1092,11 +1203,9 @@ export class Dashboard extends Component {
                           />
                         </div>
                       </div>
-
                       <div className="col-md-2">
                         <label>To: </label>
-                        <div className="text-white bg-light ">
-
+                        <div className="text-dark bg-light m-0.5" style={{width: "100%"}}>
                           <DatePicker bg-red
                             data-enable-time
                             value={enddate}
@@ -1104,7 +1213,6 @@ export class Dashboard extends Component {
                               this.setState({ enddate });
                             }}
                           />
-
                         </div>
                       </div>
                     </div>
@@ -1114,7 +1222,6 @@ export class Dashboard extends Component {
                         <button className="btn btn-primary" onClick={this.searchExpense}>Search</button>
                       </div>
                     </div>
-
                     <br />
 
                     <h3 className="card-firstName">Expense's Details</h3>
@@ -1142,7 +1249,14 @@ export class Dashboard extends Component {
                             />
 
                         </CCardBody>
+                        <div className="col-md-12 d-flex justify-content-center ">
+                      <button className="btn btn-primary" onClick={() => this.generateExpensesPDF(this.state.expensedata)}>generate pdf
+                      </button>
+                      </div>
+                      
                       </CCard>
+                
+
                     </div>
                   </div>
                 </div>

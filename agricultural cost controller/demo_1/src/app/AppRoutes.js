@@ -4,48 +4,39 @@ import { Switch, Route, Redirect } from 'react-router-dom';
 import Spinner from '../app/shared/Spinner';
 //import Expense from './expense/AddExpense';
 
-const Dashboard = lazy(() => import('./dashboard/Dashboard'));
+var Crop = lazy(() => import('./crop/AddCrop'));
 
-/* const Buttons = lazy(() => import('./basic-ui/Buttons'));
-const Dropdowns = lazy(() => import('./basic-ui/Dropdowns'));
-const Typography = lazy(() => import('./basic-ui/Typography')); */
+var Dashboard = lazy(() => import('./dashboard/Dashboard'));
 
-const BasicElements = lazy(() => import('./form-elements/BasicElements'));
+var BasicElements = lazy(() => import('./form-elements/BasicElements'));
 
-const BasicTable = lazy(() => import('./tables/BasicTable'));
+var BasicTable = lazy(() => import('./tables/BasicTable'));
 
-const Mdi = lazy(() => import('./icons/Mdi'));
+var Mdi = lazy(() => import('./icons/Mdi'));
 
-const ChartJs = lazy(() => import('./charts/ChartJs'));
+var ChartJs = lazy(() => import('./charts/ChartJs'));
 
-const Error404 = lazy(() => import('./error-pages/Error404'));
-const Error500 = lazy(() => import('./error-pages/Error500'));
+var Error404 = lazy(() => import('./error-pages/Error404'));
+var Error500 = lazy(() => import('./error-pages/Error500'));
 
-const Login = lazy(() => import('./user-pages/Login'));
-const Register1 = lazy(() => import('./user-pages/Register'));
+var Login = lazy(() => import('./user-pages/Login'));
+var Register1 = lazy(() => import('./user-pages/Register'));
 
-const Expenses = lazy(() => import('./expense/AddExpense'));
-const Income = lazy(() => import('./income/AddIncome'));
-const Category = lazy(() => import('./category/AddCategory'));
-const Crop = lazy(() => import('./crop/AddCrop'));
+var Expenses = lazy(() => import('./expense/AddExpense'));
+var Income = lazy(() => import('./income/AddIncome'));
+var Category = lazy(() => import('./category/AddCategory'));
+
 
 class AppRoutes extends Component {
   render () {
     return (
       <Suspense fallback={<Spinner/>}>
         <Switch>
-          <Route exact path="/dashboard" component={ Dashboard } />
-
-        {/*   <Route path="/expense/buttons" component={ Buttons } />
-          <Route path="/expense/dropdowns" component={ Dropdowns } />
-          <Route path="/expense/typography" component={ Typography } /> */}
+          <Route path="/dashboard" component={ Dashboard } />
 
           <Route path="/form-Elements/basic-elements" component={ BasicElements } />
-
           <Route path="/tables/basic-table" component={ BasicTable } />
-
           <Route path="/icons/mdi" component={ Mdi } />
-
           <Route path="/charts/chart-js" component={ ChartJs } />
 
 

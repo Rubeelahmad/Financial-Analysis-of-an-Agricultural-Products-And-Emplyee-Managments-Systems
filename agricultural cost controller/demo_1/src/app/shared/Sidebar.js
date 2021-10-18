@@ -105,11 +105,13 @@ class Sidebar extends Component {
             <Collapse in={this.state.cropElementsMenuOpen}>
               <div>
                 <ul className="nav flex-column sub-menu">
-                  <li className="nav-item"> <Link className={this.isPathActive('/crop/add-crop') ? 'nav-link active' : 'nav-link'} to="/crop/add-crop">Add Crop</Link></li>
+                  <li className="nav-item"> 
+                  <Link className={this.isPathActive('/crop/add-crop') ? 'nav-link active' : 'nav-link'} to="/crop/add-crop">Add Crop</Link></li>
                 </ul>
               </div>
             </Collapse>
           </li>
+         
           <li className={this.isPathActive('/category') ? 'nav-item menu-items active' : 'nav-item menu-items'}>
             <div className={this.state.categoryElementsMenuOpen ? 'nav-link menu-expanded' : 'nav-link'} onClick={() => this.toggleMenuState('categoryElementsMenuOpen')} data-toggle="collapse">
               <span className="menu-icon">
